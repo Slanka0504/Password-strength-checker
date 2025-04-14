@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Checker</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Password Strength Analyzer</h1>
+        <div class="password-box">
+            <input type="password" id="passwordInput" placeholder="Enter your password...">
+            <button id="checkBtn">Check Strength</button>
+        </div>
+        
+        <div class="result-box">
+            <div class="strength-meter">
+                <div class="strength-bar" id="strengthBar"></div>
+            </div>
+            <p>Strength: <span id="strengthLevel">-</span></p>
+            <p>Estimated cracking time: <span id="crackingTime">-</span></p>
+            
+            <div class="feedback" id="feedback">
+                <!-- Feedback items will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('checkBtn').addEventListener('click', checkPassword);
+        document.getElementById('passwordInput').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (!password) return;
+            
+            fetch('/check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `password=${encodeURIComponent(password)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                // Update UI with results
+                document.getElementById('strengthLevel').textContent = data.strength_level;
+                document.getElementById('strengthLevel').style.color = data.color;
+                document.getElementById('crackingTime').textContent = data.cracking_time;
+                
+                // Update strength meter
+                const strengthBar = document.getElementById('strengthBar');
+                strengthBar.style.width = 
+                    data.strength_level === "Very Strong" ? "100%" :
+                    data.strength_level === "Strong" ? "75%" :
+                    data.strength_level === "Medium" ? "50%" : "25%";
+                strengthBar.style.backgroundColor = data.color;
+                
+                // Update feedback
+                const feedbackDiv = document.getElementById('feedback');
+                feedbackDiv.innerHTML = data.feedback.map(item => 
+                    `<div class="feedback-item">${item}</div>`
+                ).join('');
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
